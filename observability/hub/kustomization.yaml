@@ -1,0 +1,34 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: observability
+resources:
+  - namespace.yaml
+  - mimir/deployment.yaml
+  - mimir/service.yaml
+  - loki/deployment.yaml
+  - loki/service.yaml
+  - tempo/deployment.yaml
+  - tempo/service.yaml
+  - grafana/deployment.yaml
+  - grafana/service.yaml
+configMapGenerator:
+  - name: mimir-config
+    files:
+      - mimir.yaml=mimir/mimir.yaml
+  - name: loki-config
+    files:
+      - loki.yaml=loki/loki.yaml
+  - name: tempo-config
+    files:
+      - tempo.yaml=tempo/tempo.yaml
+  - name: grafana-datasources
+    files:
+      - datasources.yaml=grafana/provisioning/datasources/datasources.yaml
+  - name: grafana-dashboard-provider
+    files:
+      - dashboards.yaml=grafana/provisioning/dashboards/dashboards.yaml
+  - name: grafana-dashboards
+    files:
+      - astronomy-shop-observability.json=grafana/dashboards/astronomy-shop-observability.json
+generatorOptions:
+  disableNameSuffixHash: true

@@ -1,0 +1,162 @@
+prometheus.operator.servicemonitors "alloy_self" {
+  namespaces = ["observability"]
+  selector {
+    match_labels = {
+      app = "alloy",
+    }
+  }
+  forward_to = [prometheus.remote_write.hub.receiver]
+}
+
+prometheus.operator.servicemonitors "demo_datastores" {
+  namespaces = ["demo"]
+  selector {
+    match_labels = {
+      "app.kubernetes.io/part-of" = "opentelemetry-demo",
+      monitoring                  = "datastore",
+    }
+  }
+  forward_to = [prometheus.remote_write.hub.receiver]
+}
+
+prometheus.remote_write "hub" {
+  external_labels = {cluster = "downstream", environment = "demo"}
+  endpoint {
+    url = "http://hub-mimir.observability.svc:9009/api/v1/push"
+  }
+}
+
+discovery.kubernetes "demo_pods" {
+  role = "pod"
+  namespaces {
+    names = ["demo"]
+  }
+}
+
+discovery.relabel "demo_logs" {
+  targets = discovery.kubernetes.demo_pods.targets
+  rule {
+    source_labels = ["__meta_kubernetes_namespace"]
+    target_label = "namespace"
+  }
+  rule {
+    source_labels = ["__meta_kubernetes_pod_name"]
+    target_label = "pod"
+  }
+  rule {
+    source_labels = ["__meta_kubernetes_pod_container_name"]
+    target_label = "container"
+  }
+  rule {
+    source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_component"]
+    target_label = "app"
+  }
+  rule {
+    source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_component"]
+    target_label = "service_name"
+  }
+  rule {
+    target_label = "cluster"
+    replacement = "downstream"
+  }
+}
+
+// loki.source.kubernetes requires these internal pod identifiers. Retain them
+// explicitly while adding readable labels for the Grafana log dashboard.
+discovery.relabel "demo_log_targets" {
+  targets = discovery.kubernetes.demo_pods.targets
+  rule {
+    source_labels = ["__meta_kubernetes_namespace"]
+    target_label  = "__pod_namespace__"
+  }
+  rule {
+    source_labels = ["__meta_kubernetes_pod_name"]
+    target_label  = "__pod_name__"
+  }
+  rule {
+    source_labels = ["__meta_kubernetes_pod_uid"]
+    target_label  = "__pod_uid__"
+  }
+  rule {
+    source_labels = ["__meta_kubernetes_pod_container_name"]
+    target_label  = "__pod_container_name__"
+  }
+  rule {
+    source_labels = ["__meta_kubernetes_namespace"]
+    target_label  = "namespace"
+  }
+  rule {
+    source_labels = ["__meta_kubernetes_pod_name"]
+    target_label  = "pod"
+  }
+  rule {
+    source_labels = ["__meta_kubernetes_pod_container_name"]
+    target_label  = "container"
+  }
+  rule {
+    source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_component"]
+    target_label  = "service_name"
+  }
+  rule {
+    target_label = "cluster"
+    replacement  = "downstream"
+  }
+}
+
+loki.source.kubernetes "demo" {
+  targets    = discovery.relabel.demo_log_targets.output
+  forward_to = [loki.write.hub.receiver]
+}
+
+loki.write "hub" {
+  endpoint {
+    url = "http://hub-loki.observability.svc:3100/loki/api/v1/push"
+  }
+}
+
+otelcol.receiver.otlp "ingest" {
+  grpc {
+    endpoint = "0.0.0.0:4317"
+  }
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+  output {
+    traces  = [otelcol.processor.memory_limiter.default.input]
+    metrics = [otelcol.exporter.prometheus.otlp.input]
+    logs    = [otelcol.exporter.loki.otlp.input]
+  }
+}
+
+otelcol.exporter.prometheus "otlp" {
+  resource_to_telemetry_conversion = true
+  forward_to                       = [prometheus.remote_write.hub.receiver]
+}
+
+otelcol.exporter.loki "otlp" {
+  forward_to = [loki.write.hub.receiver]
+}
+
+otelcol.processor.memory_limiter "default" {
+  check_interval = "1s"
+  limit = "256MiB"
+  spike_limit = "64MiB"
+  output {
+    traces = [otelcol.processor.batch.default.input]
+  }
+}
+
+otelcol.processor.batch "default" {
+  output {
+    traces = [otelcol.exporter.otlp.tempo.input]
+  }
+}
+
+otelcol.exporter.otlp "tempo" {
+  client {
+    endpoint = "hub-tempo.observability.svc:4317"
+    tls {
+      insecure = true
+    }
+  }
+}

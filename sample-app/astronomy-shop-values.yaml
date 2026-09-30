@@ -1,0 +1,82 @@
+default:
+  env:
+    - name: OTEL_SERVICE_NAME
+      valueFrom:
+        fieldRef:
+          apiVersion: v1
+          fieldPath: "metadata.labels['app.kubernetes.io/component']"
+    - name: OTEL_COLLECTOR_NAME
+      value: alloy.observability.svc.cluster.local
+    - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
+      value: cumulative
+    - name: OTEL_EXPORTER_OTLP_METRICS_DEFAULT_HISTOGRAM_AGGREGATION
+      value: explicit_bucket_histogram
+    - name: OTEL_RESOURCE_ATTRIBUTES
+      value: service.version=2.1.3,deployment.environment.name=demo,k8s.cluster.name=downstream
+    # Send structured application logs through OTLP. Alloy forwards them to Loki.
+    # Kubernetes stdout/stderr collection remains enabled for infrastructure logs.
+    - name: OTEL_LOGS_EXPORTER
+      value: otlp
+
+components:
+  # The feature flag service remains enabled, but its optional Phoenix UI sidecar
+  # is disabled to keep the distributed demo within a practical local memory budget.
+  flagd:
+    sidecarContainers: []
+  # Keep the built-in traffic realistic but bounded for a two-kind-cluster laptop demo.
+  # Some upstream defaults are intentionally tiny and are too low on ARM/kind;
+  # raise only the services that otherwise repeatedly OOM during startup.
+  checkout:
+    resources:
+      limits:
+        memory: 128Mi
+  product-catalog:
+    resources:
+      limits:
+        memory: 128Mi
+  recommendation:
+    resources:
+      limits:
+        memory: 256Mi
+  load-generator:
+    env:
+      - name: LOCUST_WEB_HOST
+        value: "0.0.0.0"
+      - name: LOCUST_WEB_PORT
+        value: "8089"
+      - name: LOCUST_USERS
+        value: "3"
+      - name: LOCUST_SPAWN_RATE
+        value: "1"
+      - name: LOCUST_HOST
+        value: http://frontend-proxy:8080
+      - name: LOCUST_HEADLESS
+        value: "false"
+      - name: LOCUST_AUTOSTART
+        value: "true"
+      - name: LOCUST_BROWSER_TRAFFIC_ENABLED
+        value: "false"
+      - name: PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION
+        value: python
+      - name: FLAGD_HOST
+        value: flagd
+      - name: FLAGD_PORT
+        value: "8013"
+      - name: FLAGD_OFREP_PORT
+        value: "8016"
+      - name: OTEL_EXPORTER_OTLP_ENDPOINT
+        value: http://$(OTEL_COLLECTOR_NAME):4317
+    resources:
+      limits:
+        memory: 500Mi
+
+opentelemetry-collector:
+  enabled: false
+jaeger:
+  enabled: false
+prometheus:
+  enabled: false
+grafana:
+  enabled: false
+opensearch:
+  enabled: false

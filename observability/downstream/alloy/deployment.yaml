@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alloy
+  namespace: observability
+spec:
+  replicas: 1
+  strategy: {type: Recreate}
+  selector:
+    matchLabels: {app: alloy}
+  template:
+    metadata:
+      labels: {app: alloy}
+    spec:
+      serviceAccountName: alloy
+      containers:
+        - name: alloy
+          image: grafana/alloy:v1.7.5
+          args:
+            - run
+            - /etc/alloy/config.alloy
+            - --server.http.listen-addr=0.0.0.0:12345
+            - --storage.path=/var/lib/alloy
+          ports:
+            - {containerPort: 12345, name: http}
+            - {containerPort: 4317, name: otlp-grpc}
+            - {containerPort: 4318, name: otlp-http}
+          readinessProbe:
+            httpGet: {path: /-/ready, port: http}
+          resources:
+            requests: {cpu: 100m, memory: 128Mi}
+            limits: {cpu: 500m, memory: 512Mi}
+          volumeMounts:
+            - {name: config, mountPath: /etc/alloy}
+            - {name: storage, mountPath: /var/lib/alloy}
+      volumes:
+        - name: config
+          configMap: {name: alloy-config}
+        - name: storage
+          emptyDir: {}

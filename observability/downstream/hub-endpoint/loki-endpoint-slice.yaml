@@ -1,0 +1,12 @@
+apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
+metadata:
+  name: hub-loki
+  namespace: observability
+  labels:
+    kubernetes.io/service-name: hub-loki
+addressType: IPv4
+ports:
+  - {name: http, protocol: TCP, port: 30100}
+endpoints:
+  - addresses: ["HUB_NODE_IP"]

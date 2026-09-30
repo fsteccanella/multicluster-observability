@@ -1,0 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: demo
+resources:
+  - frontend-public-service.yaml
+  - postgresql-exporter.yaml
+  - valkey-exporter.yaml
+helmCharts:
+  - name: opentelemetry-demo
+    repo: https://open-telemetry.github.io/opentelemetry-helm-charts
+    version: 0.38.0
+    releaseName: astronomy-shop
+    namespace: demo
+    valuesFile: astronomy-shop-values.yaml
+patches:
+  - path: frontend-shipping-url-patch.yaml
+  - path: checkout-shipping-url-patch.yaml

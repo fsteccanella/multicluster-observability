@@ -1,0 +1,44 @@
+target: all
+multitenancy_enabled: false
+limits:
+  max_label_names_per_series: 50
+usage_stats:
+  enabled: false
+server:
+  http_listen_port: 9009
+common:
+  storage:
+    backend: filesystem
+    filesystem:
+      dir: /data/blocks
+blocks_storage:
+  backend: filesystem
+  filesystem:
+    dir: /data/blocks
+  tsdb:
+    dir: /data/tsdb
+  bucket_store:
+    sync_dir: /data/tsdb-sync
+compactor:
+  data_dir: /data/compactor
+  sharding_ring:
+    kvstore:
+      store: inmemory
+ingester:
+  ring:
+    kvstore:
+      store: inmemory
+    replication_factor: 1
+store_gateway:
+  sharding_ring:
+    replication_factor: 1
+    kvstore:
+      store: inmemory
+ruler_storage:
+  backend: filesystem
+  filesystem:
+    dir: /data/rules
+alertmanager_storage:
+  backend: filesystem
+  filesystem:
+    dir: /data/alertmanager

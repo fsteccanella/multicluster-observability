@@ -1,0 +1,12 @@
+apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
+metadata:
+  name: hub-mimir
+  namespace: observability
+  labels:
+    kubernetes.io/service-name: hub-mimir
+addressType: IPv4
+ports:
+  - {name: http, protocol: TCP, port: 30090}
+endpoints:
+  - addresses: ["HUB_NODE_IP"]

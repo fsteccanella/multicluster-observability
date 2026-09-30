@@ -1,0 +1,13 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+spec:
+  template:
+    spec:
+      containers:
+        - name: frontend
+          env:
+            # The frontend uses this value as an HTTP URL when it requests a shipping quote.
+            - name: SHIPPING_ADDR
+              value: http://shipping:8080

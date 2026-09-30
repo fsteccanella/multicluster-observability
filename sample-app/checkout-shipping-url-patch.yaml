@@ -1,0 +1,13 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: checkout
+spec:
+  template:
+    spec:
+      containers:
+        - name: checkout
+          env:
+            # Checkout calls the shipping quote endpoint over HTTP, so this must be a URL.
+            - name: SHIPPING_ADDR
+              value: http://shipping:8080

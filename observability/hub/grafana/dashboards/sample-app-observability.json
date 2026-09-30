@@ -1,0 +1,21 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "panels": [
+    {"type":"stat","title":"Sample App Availability","datasource":{"type":"prometheus","uid":"mimir"},"targets":[{"expr":"up{job=\"sample-app\"}","refId":"A"}],"fieldConfig":{"defaults":{"mappings":[{"type":"value","options":{"0":{"text":"Down","color":"red"},"1":{"text":"Up","color":"green"}}}]},"overrides":[]},"gridPos":{"h":5,"w":5,"x":0,"y":0}},
+    {"type":"stat","title":"Error Rate","datasource":{"type":"prometheus","uid":"mimir"},"targets":[{"expr":"sum(rate(http_requests_total{job=\"sample-app\",status=~\"5..\"}[5m])) / clamp_min(sum(rate(http_requests_total{job=\"sample-app\"}[5m])), 0.001)","refId":"A"}],"fieldConfig":{"defaults":{"unit":"percentunit","decimals":2},"overrides":[]},"gridPos":{"h":5,"w":5,"x":5,"y":0}},
+    {"type":"timeseries","title":"Request Rate by Route and Scenario","datasource":{"type":"prometheus","uid":"mimir"},"targets":[{"expr":"sum by (route, scenario) (rate(http_requests_total{job=\"sample-app\"}[1m]))","legendFormat":"{{route}} · {{scenario}}","refId":"A"}],"gridPos":{"h":8,"w":14,"x":10,"y":0}},
+    {"type":"timeseries","title":"p95 Latency by Route","datasource":{"type":"prometheus","uid":"mimir"},"targets":[{"expr":"histogram_quantile(0.95, sum by (le, route) (rate(http_request_duration_seconds_bucket{job=\"sample-app\"}[5m])))","legendFormat":"{{route}}","refId":"A"}],"fieldConfig":{"defaults":{"unit":"s"},"overrides":[]},"gridPos":{"h":8,"w":12,"x":0,"y":8}},
+    {"type":"timeseries","title":"Dependency Errors","datasource":{"type":"prometheus","uid":"mimir"},"targets":[{"expr":"sum by (dependency) (rate(dependency_calls_total{job=\"sample-app\",outcome=\"error\"}[5m]))","legendFormat":"{{dependency}}","refId":"A"}],"gridPos":{"h":8,"w":12,"x":12,"y":8}},
+    {"type":"timeseries","title":"Checkout Events","datasource":{"type":"prometheus","uid":"mimir"},"targets":[{"expr":"sum by (event, scenario) (rate(business_events_total{job=\"sample-app\"}[5m]))","legendFormat":"{{event}} · {{scenario}}","refId":"A"}],"gridPos":{"h":8,"w":12,"x":0,"y":16}},
+    {"type":"logs","title":"Sample App Logs — Click TraceID for Tempo Drilldown","datasource":{"type":"loki","uid":"loki"},"targets":[{"expr":"{namespace=\"demo\", app=\"sample-app\"} | logfmt | line_format `{{.level}} {{.msg}} · route={{.route}} scenario={{.scenario}} status={{.status}} duration={{.duration_ms}}ms tier={{.user_tier}} trace_id={{.trace_id}} {{if .error}}error={{.error}}{{end}}`","refId":"A"}],"options":{"showTime":true,"wrapLogMessage":true,"dedupStrategy":"none","sortOrder":"Descending"},"gridPos":{"h":10,"w":12,"x":12,"y":16}}
+  ],
+  "refresh":"5s",
+  "schemaVersion":39,
+  "tags":["alloy","demo"],
+  "templating":{"list":[]},
+  "time":{"from":"now-15m","to":"now"},
+  "title":"Sample App Observability",
+  "uid":"sample-app-observability",
+  "version":2
+}

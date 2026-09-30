@@ -1,0 +1,21 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "panels": [
+    {"type":"stat","title":"Services Reporting","datasource":{"type":"prometheus","uid":"mimir"},"targets":[{"expr":"count(count by (job) (target_info{environment=\"demo\"}))","refId":"A"}],"fieldConfig":{"defaults":{"unit":"none"},"overrides":[]},"gridPos":{"h":6,"w":6,"x":0,"y":0}},
+    {"type":"timeseries","title":"Frontend Request Rate","datasource":{"type":"prometheus","uid":"mimir"},"targets":[{"expr":"sum(rate(app_frontend_requests_total{job=\"frontend\"}[5m]))","legendFormat":"requests/s","refId":"A"}],"gridPos":{"h":6,"w":9,"x":6,"y":0}},
+    {"type":"timeseries","title":"Frontend p95 Latency","datasource":{"type":"prometheus","uid":"mimir"},"targets":[{"expr":"histogram_quantile(0.95, sum by (le) (rate(http_server_duration_milliseconds_bucket{job=\"frontend\"}[5m])))","legendFormat":"p95","refId":"A"}],"fieldConfig":{"defaults":{"unit":"ms"},"overrides":[]},"gridPos":{"h":6,"w":9,"x":15,"y":0}},
+    {"type":"timeseries","title":"Requests by Service","datasource":{"type":"prometheus","uid":"mimir"},"targets":[{"expr":"sum by(job) (rate(http_server_duration_milliseconds_count{cluster=\"downstream\",job!=\"alloy\"}[5m])) or sum by(job) (rate(rpc_server_duration_milliseconds_count{cluster=\"downstream\",job!=\"alloy\"}[5m])) or sum by (job) (rate(http_server_request_duration_seconds_count{cluster=\"downstream\",job=\"cart\"}[5m])) or sum by (job) (rate(http_server_duration_seconds_count{cluster=\"downstream\",job=\"shipping\"}[5m]))","legendFormat":"{{job}}","refId":"A"}],"gridPos":{"h":8,"w":24,"x":0,"y":6}},
+    {"id":6,"type":"stat","title":"PostgreSQL Connections","description":"Active connections to the otel database","datasource":{"type":"prometheus","uid":"mimir"},"targets":[{"expr":"pg_stat_database_numbackends{cluster=\"downstream\",datname=\"otel\",job=~\".*postgres.*\"}","legendFormat":"otel connections","refId":"A"}],"fieldConfig":{"defaults":{"unit":"short","min":0,"color":{"mode":"thresholds"},"thresholds":{"mode":"absolute","steps":[{"color":"green"},{"color":"orange","value":80},{"color":"red","value":150}]}},"overrides":[]},"options":{"reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"orientation":"auto","textMode":"auto","colorMode":"value","graphMode":"area","justifyMode":"auto","wideLayout":true},"gridPos":{"h":6,"w":12,"x":0,"y":14}},
+    {"id":7,"type":"stat","title":"Valkey Keys","description":"Current key count in database db0","datasource":{"type":"prometheus","uid":"mimir"},"targets":[{"expr":"redis_db_keys{cluster=\"downstream\",db=\"db0\",job=~\".*valkey.*\"}","legendFormat":"db0 keys","refId":"A"}],"fieldConfig":{"defaults":{"unit":"short","min":0,"color":{"mode":"thresholds"},"thresholds":{"mode":"absolute","steps":[{"color":"green"},{"color":"orange","value":10000},{"color":"red","value":50000}]}},"overrides":[]},"options":{"reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"orientation":"auto","textMode":"auto","colorMode":"value","graphMode":"area","justifyMode":"auto","wideLayout":true},"gridPos":{"h":6,"w":12,"x":12,"y":14}},
+    {"type":"logs","title":"Application Logs — TraceID links to Tempo when available","datasource":{"type":"loki","uid":"loki"},"targets":[{"expr":"{namespace=\"demo\", service_name=~\"$service\"}","refId":"A"}],"options":{"showTime":true,"wrapLogMessage":true,"dedupStrategy":"none","sortOrder":"Descending"},"gridPos":{"h":12,"w":24,"x":0,"y":20}}
+  ],
+  "refresh":"10s",
+  "schemaVersion":39,
+  "tags":["alloy","opentelemetry-demo","astronomy-shop"],
+  "templating":{"list":[{"name":"service","label":"Microservice","type":"query","datasource":{"type":"loki","uid":"loki"},"query":"label_values({namespace=\"demo\"}, service_name)","definition":"label_values({namespace=\"demo\"}, service_name)","refresh":2,"includeAll":true,"allValue":".*","multi":true,"current":{"text":"All","value":"$__all"}}]},
+  "time":{"from":"now-15m","to":"now"},
+  "title":"Astronomy Shop Observability",
+  "uid":"astronomy-shop-observability",
+  "version":1
+}
